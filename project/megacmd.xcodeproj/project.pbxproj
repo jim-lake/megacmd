@@ -1,0 +1,80 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXFileReference section */
+		2D391C8716B3AA36006CCFCA /* cmd.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = cmd.py; path = ../cmd.py; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2D391C7B16B3A9B9006CCFCA = {
+			isa = PBXGroup;
+			children = (
+				2D391C8916B3AA47006CCFCA /* src */,
+				2D391C8716B3AA36006CCFCA /* cmd.py */,
+			);
+			sourceTree = "<group>";
+		};
+		2D391C8916B3AA47006CCFCA /* src */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = src;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		2D391C7D16B3A9B9006CCFCA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0450;
+			};
+			buildConfigurationList = 2D391C8016B3A9B9006CCFCA /* Build configuration list for PBXProject "megacmd" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 2D391C7B16B3A9B9006CCFCA;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		2D391C8216B3A9B9006CCFCA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		2D391C8316B3A9B9006CCFCA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2D391C8016B3A9B9006CCFCA /* Build configuration list for PBXProject "megacmd" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D391C8216B3A9B9006CCFCA /* Debug */,
+				2D391C8316B3A9B9006CCFCA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2D391C7D16B3A9B9006CCFCA /* Project object */;
+}
