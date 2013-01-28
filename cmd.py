@@ -1,4 +1,5 @@
 
+import os
 import array
 import sys
 import time
@@ -9,6 +10,8 @@ import urlparse
 import random
 import base64
 from Crypto.Cipher import AES
+from Crypto.Util import Counter
+
 
 #test url: https://mega.co.nz/#!ckgAHYwb!HJ76cRzzAJZRALOj-EwyrzZv31QXyGZpMfzcNMsFaNE
 
@@ -43,34 +46,34 @@ def rest_post(url,data):
     conn = httplib.HTTPSConnection(url_parts.hostname)
     uri = "%s?%s" % (url_parts.path,url_parts.query)
     
-    print "uri: %r" % uri
+    #print "uri: %r" % uri
     
     conn.request('POST',uri,data,__POST_HEADERS__)
-    print "sent request"
+    #print "sent request"
     response = conn.getresponse()
-    print "got response: %s" % response.status
+    #print "got response: %s" % response.status
     data = None
     if response.status == 200:
         data = response.read()
-        print "data: %r" % data
+        #print "data: %r" % data
     
     return (response.status,data)
 
 def get_file(url):
-    print "get_file: %r" % url
+    #print "get_file: %r" % url
     url_parts = urlparse.urlparse(url)
     conn = httplib.HTTPConnection(url_parts.hostname)
     uri = "%s" % url_parts.path
     if len(url_parts.query) > 0:
         uri += "?%s" % url_parts.query
-    print "get_file: uri: %r" % uri
+    #print "get_file: uri: %r" % uri
     conn.request('GET',uri)
     response = conn.getresponse()
-    print "got response: %s" % response.status
+    #print "got response: %s" % response.status
     data = None
     if response.status == 200:
         data = response.read()
-        print "data: len: %d" % len(data)
+        #print "data: len: %d" % len(data)
     
     return (response.status,data)
 
@@ -87,17 +90,17 @@ def mega_get():
 
     parts = urlparse.urlparse(url)
 
-    print "Fragment: %s" % parts.fragment
-    print "host: %s" % parts.hostname
-    print "scheme: %s" % parts.scheme
+    #print "Fragment: %s" % parts.fragment
+    #print "host: %s" % parts.hostname
+    #print "scheme: %s" % parts.scheme
 
     file_key = parts.fragment.split('!')
 
     file = file_key[1]
     key = file_key[2]
 
-    print "File: %r" % file
-    print "Key(%d): %r" % (len(key),key)
+    #print "File: %r" % file
+    #print "Key(%d): %r" % (len(key),key)
 
     cmd = {
         "a": "g",
@@ -109,18 +112,18 @@ def mega_get():
 
     post_body = json.dumps(cmd_array)
 
-    print "json: %s" % post_body
+    #print "json: %s" % post_body
 
     seq_num = g_seq_num
     g_seq_num += 1
 
     url = "%s?id=%s" % (__CS_URL__,seq_num)
 
-    print "url: %s" % url
+    #print "url: %s" % url
 
     (status,response) = rest_post(url,post_body)
-    print "status: %s" % status
-    print "response: %s" % response
+    #print "status: %s" % status
+    #print "response: %s" % response
     
     if status != 200:
         print "megacmd: Failed to find file data, please check URL."
@@ -128,17 +131,17 @@ def mega_get():
 
     rest_json = json.loads(response)
 
-    print "rest_json: %r" % rest_json
+    #print "rest_json: %r" % rest_json
 
     file_url = rest_json[0]['g']
     at = rest_json[0]['at'].encode('utf8')
     #at = "LeyTaT74W0ECa_9J2HdlgZZErn2g-IZhdN1N0WUsaFg"
 
-    print "at(%d): %r" % (len(at),at)
+    #print "at(%d): %r" % (len(at),at)
 
     key_decoded = base64.b64decode(key + "=","-_")
 
-    print "key_decoded(%dbits): %s" % (len(key_decoded)*8,key_decoded.encode("hex"))
+    #print "key_decoded(%dbits): %s" % (len(key_decoded)*8,key_decoded.encode("hex"))
 
     aes_key_array = array.array('B', key_decoded[0:16])
     key2 = array.array('B', key_decoded[16:32])
@@ -147,34 +150,61 @@ def mega_get():
         aes_key_array[i] ^= key2[i]
 
     aes_key = aes_key_array.tostring()
-    print "aes_key(%dbits): %s" % (len(aes_key)*8,aes_key.encode("hex"))
+    #print "aes_key(%dbits): %s" % (len(aes_key)*8,aes_key.encode("hex"))
 
     decryptor = AES.new(aes_key, AES.MODE_CBC, __CBC_IV__)
 
     at_decoded = base64.b64decode(at + "=","-_")
-    print "at_decoded(%dbits): %s" % (len(at_decoded)*8,at_decoded.encode("hex"))
+    #print "at_decoded(%dbits): %s" % (len(at_decoded)*8,at_decoded.encode("hex"))
 
     decrypted_at = decryptor.decrypt(at_decoded)
 
-    print "decrypted_at(%dbits): %s : %s" % (len(decrypted_at)*8,decrypted_at.encode("hex"),decrypted_at)
+    #print "decrypted_at(%dbits): %s : %s" % (len(decrypted_at)*8,decrypted_at.encode("hex"),decrypted_at)
 
     if not decrypted_at.startswith("MEGA"):
         print "megacmd: Attribute block did not start with MEGA.  Please check your encryption key."
         exit()
 
     file_json = decrypted_at[4:].strip("\00")
-    print "file_json: %r" % file_json
+    #print "file_json: %r" % file_json
     file_attributes = json.loads(file_json)
 
-    print "file_attributes: %r" % file_attributes
+    #print "file_attributes: %r" % file_attributes
 
     file_name = file_attributes['n']
 
-    print "file_name: %r" % file_name
+    #print "file_name: %r" % file_name
 
     (status,file_data) = get_file(file_url)
 
-    decryptor = AES.new(aes_key, AES.MODE_CBC, __CBC_IV__)
+    ctr_prefix = key_decoded[16:24]
+    #print "ctr_prefix(%dbits): %s" % (len(ctr_prefix)*8,ctr_prefix.encode("hex"))
+
+    ctr = Counter.new(64,initial_value=0,prefix=ctr_prefix)
+
+    decryptor = AES.new(aes_key, AES.MODE_CTR, counter=ctr)
+    decrypted_file_data = decryptor.decrypt(file_data)
+
+    #print "decrypted_file_data(%d): %s : %r" % (len(decrypted_file_data),decrypted_file_data.encode("hex"),decrypted_file_data)
+
+    i = 0
+    base_file_name = file_name
+    while True:
+        #print "checking file: %s" % file_name
+    
+        if not os.path.exists(file_name):
+            break
+        i += 1
+        file_name = "%s.%d" % (base_file_name,i)
+
+    print "Writing to file: %s" % file_name
+
+    f = open(file_name,"wb")
+    f.write(decrypted_file_data)
+    f.close()
+
+    print "Done writing."
+
 
 def usage():
     print "Mega Command Line Util v0.01"
