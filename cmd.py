@@ -12,6 +12,8 @@ import base64
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
+__SSL_FILE_XFER__ = True
+
 
 #test url: https://mega.co.nz/#!ckgAHYwb!HJ76cRzzAJZRALOj-EwyrzZv31QXyGZpMfzcNMsFaNE
 
@@ -62,7 +64,10 @@ def rest_post(url,data):
 def get_file(url):
     #print "get_file: %r" % url
     url_parts = urlparse.urlparse(url)
-    conn = httplib.HTTPConnection(url_parts.hostname)
+    if url_parts.scheme == 'https':
+        conn = httplib.HTTPSConnection(url_parts.hostname)
+    else:
+        conn = httplib.HTTPConnection(url_parts.hostname)
     uri = "%s" % url_parts.path
     if len(url_parts.query) > 0:
         uri += "?%s" % url_parts.query
@@ -108,6 +113,10 @@ def mega_get():
         "p": file,
         "ssl": 0,
         }
+
+    if __SSL_FILE_XFER__:
+        cmd['ssl'] = 1
+
     cmd_array = [cmd]
 
     post_body = json.dumps(cmd_array)
