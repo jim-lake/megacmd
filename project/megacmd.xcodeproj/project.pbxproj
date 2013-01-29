@@ -17,13 +17,13 @@
 			children = (
 				2D391C8D16B70516006CCFCA /* README.md */,
 				2D391C8916B3AA47006CCFCA /* src */,
-				2D391C8716B3AA36006CCFCA /* cmd.py */,
 			);
 			sourceTree = "<group>";
 		};
 		2D391C8916B3AA47006CCFCA /* src */ = {
 			isa = PBXGroup;
 			children = (
+				2D391C8716B3AA36006CCFCA /* cmd.py */,
 			);
 			name = src;
 			sourceTree = "<group>";

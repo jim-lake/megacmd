@@ -11,6 +11,8 @@ import random
 import base64
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5
 
 __SSL_FILE_XFER__ = True
 
@@ -214,12 +216,134 @@ def mega_get():
 
     print "Done writing."
 
+def mega_ls():
+    #var passwordaes = new sjcl.cipher.aes(prepare_key_pw(document.getElementById('login_password').value));
+    #var uh = stringhash(document.getElementById('login_email').value.toLowerCase(),passwordaes);
+    global g_seq_num
+
+    if len(sys.argv) < 4:
+        print "megacmd: ls requires email and password"
+        exit()
+
+    email = sys.argv[2].lower()
+    password = sys.argv[3]
+    print "Doing ls for username: %s" % email
+
+    password_aes_key = prepare_key_pw(password)
+    print "password_aes_key: %s" % password_aes_key.encode("hex")
+
+    uh = get_string_hash(email,password_aes_key)
+    print "uh: %r" % uh
+    
+    cmd = {
+        "a": "us",
+        "user": email,
+        "uh": uh,
+    }
+
+    cmd_array = [cmd]
+    post_body = json.dumps(cmd_array)
+
+    print "post_body: %r" % post_body
+
+    seq_num = g_seq_num
+    g_seq_num += 1
+    
+    url = "%s?id=%s" % (__CS_URL__,seq_num)
+
+    print "url: %s" % url
+    
+    (status,response) = rest_post(url,post_body)
+    print "status: %s" % status
+    print "response: %s" % response
+    
+    if status != 200:
+        print "megacmd: Failed to login"
+        exit()
+    
+    rest_json = json.loads(response)
+    
+    print "rest_json: %r" % rest_json
+
+    k = rest_json[0]["k"].encode('utf8')
+
+    print "k: %s" % k
+    k_decoded = base64.b64decode(k + "==","-_")
+
+    print "k_decoded(%dbits): %s : %r" % (len(k_decoded)*8,k_decoded.encode("hex"),k_decoded)
+
+    cypher = AES.new(password_aes_key, AES.MODE_ECB)
+    k = cypher.decrypt(k_decoded)
+
+    print "k(%dbits): %s" % (len(k)*8,k.encode("hex"))
+
+    csid = rest_json[0]["csid"].encode('utf8')
+    t = base64.b64decode(csid,"-_")
+    print "t(%dbits): %s" % (len(t)*8,t.encode("hex"))
+
+    privk = rest_json[0]["privk"].encode('utf8')
+    privk_decoded = base64.b64decode(privk + "=","-_")
+
+    cypher = AES.new(k,AES.MODE_ECB)
+    rsa_privk = cypher.decrypt(privk_decoded)
+
+    print "rsa_privk(%dbits): %s" % (len(rsa_privk)*8,rsa_privk.encode("hex"))
+
+    key = RSA.importKey(rsa_privk)
+    print "key: %r" % key
+
+    rsa_cypher = PKCS1_v1_5.new(key)
+    sid = rsa_cypher.decrypt(t)
+    sid_encoded = base64.b64encode(sid,"-_")
+
+    print "sid_encoded: %r" % sid_encoded
+
+    print "done with ls"
+
+
+def prepare_key_pw(pw):
+    #pkey = [0x93C467E3,0x7DB0C7A4,0xD1BE3F81,0x0152CB56];
+    pkey = "\x93\xC4\x67\xE3\x7D\xB0\xC7\xA4\xD1\xBE\x3F\x81\x01\x52\xCB\x56"
+    
+    a = array.array('B',pw);
+    for r in xrange(65536,0,-1):
+        for j in xrange(0,len(a),16):
+            key = array.array('B',"\x00"*16)
+            for i in range(16):
+                if i + j < len(a):
+                    key[i] = a[i + j]
+            
+            cypher = AES.new(key.tostring(), AES.MODE_ECB)
+            pkey = cypher.encrypt(pkey)
+
+    return pkey
+
+def get_string_hash(email,password_aes_key):
+    cypher = AES.new(password_aes_key,AES.MODE_ECB)
+    
+    hash = array.array('B',"\x00"*16)
+    email_array = array.array('B',email)
+        
+    for i in range(0,len(email_array)):
+        hash[i & 15] ^= email_array[i]
+    
+    hash = hash.tostring()
+
+    for i in xrange(16384,0,-1):
+        hash = cypher.encrypt(hash)
+
+    hash_0_2 = hash[0:4] + hash[8:12]
+    hash_base64 = base64.b64encode(hash_0_2,"-_")
+    hash_base64 = hash_base64[0:11]
+    return hash_base64
 
 def usage():
     print "Mega Command Line Util v0.01"
     print "megacmd <cmd> [args]"
     print ""
-    print "Commands: get"
+    print "Commands:"
+    print "  get <url>"
+    print "  ls <email> <password>"
     print ""
 
 if __name__ == '__main__':
@@ -232,6 +356,8 @@ if __name__ == '__main__':
 
     if cmd == 'get':
         mega_get()
+    elif cmd == 'ls':
+        mega_ls()
     else:
         print "megacmd: Unknown command: %s" % cmd
         exit()
