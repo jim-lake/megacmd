@@ -289,7 +289,7 @@ def mega_ls():
 
     print "rsa_privk(%dbits): %s" % (len(rsa_privk)*8,rsa_privk.encode("hex"))
 
-    key = RSA.importKey(rsa_privk)
+    key = RSA.importKey(rsa_privk_encoded)
     print "key: %r" % key
 
     rsa_cypher = PKCS1_v1_5.new(key)
